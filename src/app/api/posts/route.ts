@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 //api/posts/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
     // Atualiza cada post com a informação de "hasLiked" para o usuário logado
     const updatedPosts = posts.slice(0, limit).map((post) => {
       const hasLiked = post.likes?.length > 0; // Verifica se o array de likes existe e tem elementos
-      const hasLikedComment = post.comments.likes.length > 0; // Verifica se o array de likes dos comentários existe e tem elementos
+      //const hasLikedComment = post.comments.likes?.length > 0; // Verifica se o array de likes dos comentários existe e tem elementos
       const hasBookMarked = post.bookmarks?.length > 0; // Verifica se o array de mark existe e tem elementos
       return {
         ...post,

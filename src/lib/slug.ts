@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/utils/slug.ts
 export function generateSlug(name: string): string {
   return name

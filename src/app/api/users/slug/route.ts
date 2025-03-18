@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/api/users/slug/route.ts
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";

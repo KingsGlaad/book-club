@@ -1,11 +1,12 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers"; // Importação correta para acessar os cookies
 
-export default function middleware(req: Request) {
+export default async function middleware(req: Request) {
   const url = new URL(req.url);
+  const cookieStore = cookies(); // Acessa os cookies usando next/headers
   const token =
-    req.cookies.get("next-auth.session-token") ||
-    req.cookies.get("__Secure-next-auth.session-token");
+    (await cookieStore).get("next-auth.session-token") ||
+    (await cookieStore).get("__Secure-next-auth.session-token");
 
   if (!token) {
     // 🔹 Redireciona para a página de login, mantendo o redirect de onde veio
