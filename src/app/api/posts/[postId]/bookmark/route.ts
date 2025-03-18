@@ -6,10 +6,10 @@ import { authOptions } from "@/lib/auth";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  context: { params: { postId: string } }
 ) {
   const session = await getServerSession(authOptions);
-  const { postId } = await params;
+  const { postId } = await context.params;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,10 +67,10 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  context: { params: { postId: string } }
 ) {
   const session = await getServerSession(authOptions);
-  const { postId } = await params;
+  const { postId } = await context.params;
 
   try {
     // Verify the post exists
