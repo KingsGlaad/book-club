@@ -151,74 +151,6 @@ export function usePosts() {
       console.error("Erro ao curtir post:", error);
     }
   };
-
-  // Handle Like comment
-  const handleLikeComment = async (commentId: string, postId: string) => {
-    if (!requireAuth()) return;
-
-    try {
-      const currentPost = posts.find((post) => post.id === postId);
-      if (!currentPost) return;
-
-      const currentComment = currentPost.comments.find(
-        (comment) => comment.id === commentId
-      );
-      if (!currentComment) return;
-
-      // Atualização otimista
-      const updatedPosts = posts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: post.comments.map((comment) =>
-                comment.id === commentId
-                  ? {
-                      ...comment,
-                      likes: comment.hasLikedComment
-                        ? comment.likes - 1
-                        : comment.likes + 1,
-                      hasLiked: !comment.hasLikedComment,
-                    }
-                  : comment
-              ),
-            }
-          : post
-      );
-      setPosts(updatedPosts);
-
-      // Chamada da API
-      const response = await fetch(`/api/comments/${commentId}/like`, {
-        method: "POST",
-      });
-
-      if (!response.ok) throw new Error("Erro ao curtir comentário");
-
-      const data = await response.json();
-
-      // Atualização com os dados reais da API
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.id === postId
-            ? {
-                ...post,
-                comments: post.comments.map((comment) =>
-                  comment.id === commentId
-                    ? {
-                        ...comment,
-                        likes: data.likes,
-                        hasLikedComment: data.liked,
-                      }
-                    : comment
-                ),
-              }
-            : post
-        )
-      );
-    } catch (err) {
-      toast.error("Erro ao curtir comentário");
-    }
-  };
-
   // Handle bookmark
   const handleBookmark = useCallback(
     async (postId: string) => {
@@ -314,7 +246,6 @@ export function usePosts() {
     hasMore,
     newComments,
     handleLike,
-    handleLikeComment,
     handleBookmark,
     handleComment,
     setNewComments,

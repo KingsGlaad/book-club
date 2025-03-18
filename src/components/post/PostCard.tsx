@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 interface PostCardProps {
   post: Post;
   onLike: (postId: string) => void;
-  onLikeComment?: (commentId: string) => void;
   onBookmark: (postId: string) => void;
   onComment: (postId: string, content: string) => void;
   newComment: string;

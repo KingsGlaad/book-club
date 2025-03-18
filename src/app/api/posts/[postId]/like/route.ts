@@ -67,10 +67,10 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { postId: string; commentId: string } }
+  { params }: { params: { postId: string } }
 ) {
   const session = await getServerSession(authOptions);
-  const { postId, commentId } = await params;
+  const { postId } = await params;
 
   try {
     // Verify the post exists
@@ -92,7 +92,6 @@ export async function GET(
             userId_postId: {
               userId: session.user.id,
               postId: postId,
-              commentId: commentId,
             },
           },
         })
