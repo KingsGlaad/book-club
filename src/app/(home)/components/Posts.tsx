@@ -14,7 +14,6 @@ export default function PostsComponent() {
     hasMore,
     newComments,
     handleLike,
-    handleLikeComment,
     handleBookmark,
     handleComment,
     setNewComments,
@@ -45,7 +44,6 @@ export default function PostsComponent() {
               post={post}
               ref={index === posts.length - 1 ? lastPostRef : null}
               onLike={handleLike}
-              onLikeComment={handleLikeComment}
               onBookmark={handleBookmark}
               onComment={handleComment}
               newComment={newComments[post.id] || ""}

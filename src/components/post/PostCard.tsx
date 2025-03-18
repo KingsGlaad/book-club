@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 interface PostCardProps {
   post: Post;
   onLike: (postId: string) => void;
-  onLikeComment: (commentId: string) => void;
+  onLikeComment?: (commentId: string) => void;
   onBookmark: (postId: string) => void;
   onComment: (postId: string, content: string) => void;
   newComment: string;
@@ -22,15 +22,7 @@ interface PostCardProps {
 
 const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
   (
-    {
-      post,
-      onLike,
-      onLikeComment,
-      onBookmark,
-      onComment,
-      newComment,
-      onCommentChange,
-    },
+    { post, onLike, onBookmark, onComment, newComment, onCommentChange },
     ref
   ) => {
     const [showComments, setShowComments] = useState(false);
@@ -134,7 +126,7 @@ const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
               className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <MessageCircle size={18} />
-              <span>{Number(post._count.comments)}</span>
+              <span>{post.comments?.length || 0}</span>
             </button>
           </div>
           <button
@@ -216,19 +208,6 @@ const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
                         <p className="text-gray-700 dark:text-gray-300">
                           {comment.content}
                         </p>
-                        <button
-                          onClick={() => onLikeComment(comment.id)}
-                          className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          <Heart
-                            size={18}
-                            className={cn(
-                              "transition-colors",
-                              post.hasLiked ? "fill-red-500 text-red-500" : ""
-                            )}
-                          />
-                          <span>{Number(post.likes) || 0}</span>
-                        </button>
                       </div>
                     </div>
                   </div>
