@@ -1,0 +1,195 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  slug          String    @unique
+  bio           String?   @db.Text
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  posts       Post[]
+  comments    Comment[]
+  discussions Discussion[]
+  messages    Message[]
+  likes       Like[]
+  bookmarks   Bookmark[]
+  followers   Follow[]     @relation("following")
+  following   Follow[]     @relation("follower")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  type      String // 'study' ou 'regular'
+  imageUrl  String?
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User          @relation(fields: [authorId], references: [id])
+  authorId  String
+  comments  Comment[]
+  likes     Like[]
+  bookmarks Bookmark[]
+  tags      TagsOnPosts[]
+}
+
+model Discussion {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  closed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User                @relation(fields: [authorId], references: [id])
+  authorId  String
+  comments  Comment[]
+  likes     Like[]
+  bookmarks Bookmark[]
+  tags      TagsOnDiscussions[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author       User        @relation(fields: [authorId], references: [id])
+  authorId     String
+  post         Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId       String?
+  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  discussionId String?
+  likes        Like[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  sender   User   @relation(fields: [senderId], references: [id])
+  senderId String
+}
+
+model Tag {
+  id          String              @id @default(cuid())
+  name        String              @unique
+  description String?
+  posts       TagsOnPosts[]
+  discussions TagsOnDiscussions[]
+}
+
+model TagsOnPosts {
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String
+  tag    Tag    @relation(fields: [tagId], references: [id])
+  tagId  String
+
+  @@id([postId, tagId])
+}
+
+model TagsOnDiscussions {
+  discussion   Discussion @relation(fields: [discussionId], references: [id])
+  discussionId String
+  tag          Tag        @relation(fields: [tagId], references: [id])
+  tagId        String
+
+  @@id([discussionId, tagId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  user         User        @relation(fields: [userId], references: [id])
+  userId       String
+  post         Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId       String?
+  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  discussionId String?
+  comment      Comment?    @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId    String?
+
+  @@unique([userId, postId])
+  @@unique([userId, discussionId])
+  @@unique([userId, commentId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  user         User        @relation(fields: [userId], references: [id])
+  userId       String
+  post         Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId       String?
+  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  discussionId String?
+
+  @@unique([userId, postId])
+  @@unique([userId, discussionId])
+}
+
+model Follow {
+  follower    User     @relation("follower", fields: [followerId], references: [id])
+  followerId  String
+  following   User     @relation("following", fields: [followingId], references: [id])
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
