@@ -1,3 +1,5 @@
+{
+  /*
 import { db } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -41,4 +43,6 @@ export async function POST(
     console.error("Erro ao curtir comentário:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
+}
+*/
 }
