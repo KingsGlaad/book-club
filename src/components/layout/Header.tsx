@@ -17,12 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const Header = () => {
   const { data: session } = useSession();
 
-  const navigation = [
-    { name: "Início", href: "/" },
-    { name: "Posts", href: "/posts" },
-    { name: "Discussões", href: "/discussions" },
-    { name: "Chat", href: "/chat" },
-  ];
+  const navigation = [{ name: "Início", href: "/" }];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
