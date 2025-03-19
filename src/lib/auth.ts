@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { AuthOptions } from "next-auth";
 import { db } from "@/lib/prisma";
 import { Role } from "@prisma/client";
+import { generateSlug } from "./slug";
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(db),
@@ -31,7 +32,8 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
-        token.slug = (user as any).slug;
+        token.slug =
+          (user as any).slug || (await generateSlug(user.name || ""));
       } else if (!token.slug) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
