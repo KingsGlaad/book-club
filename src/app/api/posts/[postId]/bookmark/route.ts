@@ -1,15 +1,15 @@
-// api/posts/[postId]/bookmark/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+// For Next.js App Router - use this pattern exactly as shown
 export async function POST(
   request: NextRequest,
-  context: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  const { postId } = await context.params;
+  const postId = (await params).postId;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,13 +67,13 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  context: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  const { postId } = await context.params;
+  const postId = (await params).postId;
 
   try {
-    // Verify the post exists
+    // Verifica se o post existe
     const post = await db.post.findUnique({
       where: { id: postId },
     });
@@ -85,8 +85,8 @@ export async function GET(
       );
     }
 
-    // Check if the user has already marked the post
-    const existingBookMarker = session?.user?.id
+    // Verifica se o usuário já salvou o post
+    const existingBookmark = session?.user?.id
       ? await db.bookmark.findUnique({
           where: {
             userId_postId: {
@@ -98,12 +98,12 @@ export async function GET(
       : null;
 
     return NextResponse.json({
-      bookMarked: Boolean(existingBookMarker),
+      bookmarked: Boolean(existingBookmark),
     });
   } catch (error) {
-    console.error("Error checking bookmarked status:", error);
+    console.error("Erro ao verificar status do bookmark:", error);
     return NextResponse.json(
-      { error: "Failed to check bookmarked status" },
+      { error: "Falha ao verificar status do bookmark" },
       { status: 500 }
     );
   }

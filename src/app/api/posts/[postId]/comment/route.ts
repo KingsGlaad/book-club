@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth"; // 🔹 Certifique-se de importar as c
 
 export async function POST(
   req: Request,
-  context: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   const session = await getServerSession(authOptions); // 🔹 Passando as opções de autenticação
 
@@ -16,7 +16,7 @@ export async function POST(
     );
   }
 
-  const { postId } = await context.params;
+  const postId = (await params).postId;
   const { content } = await req.json();
   const userId = session.user.id; // 🔹 Agora o ID do usuário está garantido
 
@@ -39,9 +39,9 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  context: { params: { postId: string } }
+  context: { params: Promise<{ postId: string }> }
 ) {
-  const { postId } = await context.params;
+  const postId = (await context.params).postId;
 
   try {
     const comments = await db.comment.findMany({

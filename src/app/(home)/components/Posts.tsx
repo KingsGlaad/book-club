@@ -6,7 +6,7 @@ import PostCard from "@/components/post/PostCard";
 import PostSkeleton from "@/components/post/PostSkeleton";
 import ErrorMessage from "@/components/ui/ErrorMessage";
 
-export default function PostsComponent() {
+export default function PostsComponent({ id }: { id: string }) {
   const {
     posts,
     loading,
@@ -18,7 +18,7 @@ export default function PostsComponent() {
     handleComment,
     setNewComments,
     loadMorePosts,
-  } = usePosts();
+  } = usePosts(id);
 
   const lastPostRef = useInfiniteScroll(
     loading,

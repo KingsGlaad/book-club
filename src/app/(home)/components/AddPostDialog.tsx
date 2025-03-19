@@ -63,7 +63,6 @@ export default function AddPostDialog({ open, setOpen }: AddPostDialogProps) {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const imageFile = watch("image");
 
   // Atualizar preview da imagem

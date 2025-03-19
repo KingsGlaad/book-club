@@ -1,7 +1,7 @@
 "use client";
-
+// ProfilePage.tsx
 import React from "react";
-import { User, Post, Discussion } from "@prisma/client";
+import { User, Discussion } from "@prisma/client"; // Certifique-se de que Post e Comment estão sendo importados corretamente
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import PostCard from "@/components/post/PostCard";
 import { usePosts } from "@/hooks/usePosts";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import ErrorMessage from "@/components/ui/ErrorMessage";
+import { PostWithExtras } from "../page";
+
 // Tipagem para as props recebidas
 type ProfilePageProps = {
   userData: User;
-  userPosts: Post[];
+  userPosts: PostWithExtras[];
   userDiscussions: Discussion[];
 };
 
@@ -36,10 +38,32 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   const enrichedUserPosts = userPosts.map((post) => ({
     ...post,
     author: {
+      id: userData.id,
       name: userData.name,
       slug: userData.slug,
       image: userData.image || "/placeholder-avatar.png",
     },
+    imageUrl: post.imageUrl || "",
+    comments: post.comments.map((comment) => ({
+      ...comment,
+      author: {
+        id: comment.author.id,
+        name: comment.author.name ?? "",
+        image: comment.author.image ?? "",
+        slug: comment.author.slug ?? "",
+      },
+      likes: comment.likes ?? 0, // Certifique-se de que likes existe
+      hasLikedCommentts: false, // Lógica para definir se o usuário curtiu o comentário
+    })),
+    likes: post.likes || 0,
+    commentsCount: post.commentsCount || 0,
+    hasLiked: post.hasLiked || false,
+    hasBookmarked: post.hasBookMarked || false,
+    bookmarks: [], // Adicione se necessário
+    type: post.type || "default", // Defina um valor padrão para `type`
+    published: post.published ?? true, // Certifique-se de que `published` tem um valor
+    updatedAt: post.updatedAt || new Date().toISOString(), // Garante que `updatedAt` esteja presente
+    tags: post.tags || [],
   }));
 
   const lastPostRef = useInfiniteScroll(loading, hasMore, loadMorePosts);
@@ -48,6 +72,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
       <ErrorMessage message="Não foi possível carregar os posts. Por favor, tente novamente mais tarde." />
     );
   }
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       {/* Cabeçalho do perfil */}
@@ -73,7 +98,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 <PostCard
                   key={post.id}
                   post={post}
-                  ref={index === userPosts.length - 1 ? lastPostRef : null}
+                  ref={
+                    index === enrichedUserPosts.length - 1 ? lastPostRef : null
+                  }
                   onLike={handleLike}
                   onBookmark={handleBookmark}
                   onComment={handleComment}

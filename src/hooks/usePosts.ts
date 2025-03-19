@@ -16,8 +16,8 @@ interface Comment {
   content: string;
   createdAt: Date;
   author: Author;
-  likes: number;
-  hasLikedComment: boolean;
+  likes?: number;
+  hasLikedComment?: boolean;
 }
 
 interface Tag {
@@ -43,7 +43,7 @@ export interface Post {
   tags: Tag[];
 }
 
-export function usePosts() {
+export function usePosts(id: string) {
   const { data: session } = useSession();
   const router = useRouter();
 
