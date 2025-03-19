@@ -7,16 +7,22 @@ import { Role } from "@prisma/client";
 import { generateSlug } from "./slug";
 
 export const authOptions: AuthOptions = {
-  adapter: PrismaAdapter(db),
+  adapter: {
+    ...PrismaAdapter(db),
+    async createUser(data = {} as any) {
+      const slug = await generateSlug(data.name || ""); // Gera um slug antes de salvar o usuário
+      return db.user.create({
+        data: {
+          ...data,
+          slug, // Adiciona o slug ao usuário
+        },
+      });
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          redirect_uri: process.env.NEXTAUTH_URL + "/api/auth/callback/google",
-        },
-      },
     }),
   ],
   callbacks: {
@@ -37,11 +43,12 @@ export const authOptions: AuthOptions = {
       } else if (!token.slug) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
+          select: { slug: true, role: true },
         });
 
         if (dbUser) {
-          token.role = dbUser.role;
           token.slug = dbUser.slug;
+          token.role = dbUser.role;
         }
       }
       return token;
@@ -49,23 +56,8 @@ export const authOptions: AuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 dias em segundos
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
   },
-  useSecureCookies: process.env.NODE_ENV === "production",
-  cookies:
-    process.env.NODE_ENV === "production"
-      ? {
-          sessionToken: {
-            name: `__Secure-next-auth.session-token`,
-            options: {
-              httpOnly: true,
-              secure: true,
-              sameSite: "lax",
-              path: "/",
-            },
-          },
-        }
-      : undefined,
   secret: process.env.NEXTAUTH_SECRET,
   debug: true,
 };
