@@ -10,7 +10,8 @@ export const authOptions: AuthOptions = {
   adapter: {
     ...PrismaAdapter(db),
     async createUser(data = {} as any) {
-      const slug = await generateSlug(data.name || ""); // Gera um slug antes de salvar o usuário
+      const slug = await generateSlug(data.name); // Gera um slug antes de salvar o usuário
+      console.log("Slug gerado:", slug);
       return db.user.create({
         data: {
           ...data,
