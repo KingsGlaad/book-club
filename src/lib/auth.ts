@@ -4,18 +4,25 @@ import GoogleProvider from "next-auth/providers/google";
 import { AuthOptions } from "next-auth";
 import { db } from "@/lib/prisma";
 import { Role } from "@prisma/client";
-import { generateSlug } from "./slug";
+import { generateUniqueSlug } from "./slug";
 
 export const authOptions: AuthOptions = {
   adapter: {
     ...PrismaAdapter(db),
     async createUser(data = {} as any) {
-      const slug = await generateSlug(data.name); // Gera um slug antes de salvar o usuário
+      if (!data.name) {
+        console.error("Erro: nome não fornecido pelo provedor.");
+        throw new Error("Nome é obrigatório.");
+      }
+
+      const slug = await generateUniqueSlug(db, data.name);
       console.log("Slug gerado:", slug);
+      console.log("Tentando criar usuário:", JSON.stringify(data, null, 2));
+
       return db.user.create({
         data: {
           ...data,
-          slug, // Adiciona o slug ao usuário
+          slug,
         },
       });
     },
@@ -39,8 +46,7 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
-        token.slug =
-          (user as any).slug || (await generateSlug(user.name || ""));
+        token.slug = (user as any).slug;
       } else if (!token.slug) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
