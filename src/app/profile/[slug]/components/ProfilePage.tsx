@@ -2,7 +2,7 @@
 // ProfilePage.tsx
 import React from "react";
 import { User, Discussion } from "@prisma/client"; // Certifique-se de que Post e Comment estão sendo importados corretamente
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PostCard from "@/components/post/PostCard";
@@ -10,6 +10,8 @@ import { usePosts } from "@/hooks/usePosts";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import ErrorMessage from "@/components/ui/ErrorMessage";
 import { PostWithExtras } from "../page";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 // Tipagem para as props recebidas
 type ProfilePageProps = {
@@ -34,6 +36,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     setNewComments,
     loadMorePosts,
   } = usePosts(userData.id);
+
+  const { data: session } = useSession();
 
   const enrichedUserPosts = userPosts.map((post) => ({
     ...post,
@@ -76,15 +80,25 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   return (
     <div className="p-6 max-w-3xl mx-auto">
       {/* Cabeçalho do perfil */}
-      <div className="flex items-center gap-4 mb-8">
-        <Avatar className="h-20 w-20">
-          <AvatarImage src={userData.image || "/default-avatar.png"} />
-        </Avatar>
-        <div>
-          <h1 className="text-2xl font-semibold">{userData.name}</h1>
-          <p className="text-gray-500">@{userData.slug}</p>
-          <p className="text-gray-700 mt-2">{userData.bio || "Sem bio."}</p>
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={userData.image || "/default-avatar.png"} />
+            <AvatarFallback>{userData.name?.charAt(0) || "U"}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <h1 className="text-2xl font-semibold">{userData.name}</h1>
+            <p className="text-gray-500">@{userData.slug}</p>
+            <p className="text-gray-700 mt-2">{userData.bio || "Sem bio."}</p>
+          </div>
         </div>
+        {session && (
+          <div className="">
+            <Button asChild>
+              <Link href="/profile/edit">Editar Perfil</Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Seções de Postagens e Discussões */}

@@ -4,6 +4,13 @@ import { db } from "@/lib/prisma";
 
 export default async function Home() {
   try {
+    const bible = await fetch("https://bibleapi.co/api/verses/nvi/random", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.API_TOKEN}`,
+      },
+    });
     // Buscar posts do banco de dados
     const allPosts = await db.post.findMany({
       orderBy: { createdAt: "desc" },
@@ -34,6 +41,7 @@ export default async function Home() {
       hasLiked: false, // Isso será atualizado no cliente
       bookmarked: false, // Isso será atualizado no cliente
       comments: post.comments || [], // Garantindo que comments existe
+      bibleVerse: bible.json(), // Incluindo a bíblia
     }));
 
     return (

@@ -122,8 +122,6 @@ export default async function Profile({
     tags: [],
   }));
 
-  console.log("Enriched Posts page:", enrichedPosts);
-
   return (
     <ProfilePage
       userData={user}

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import Image from "next/image";
 
 const Header = () => {
   const { data: session } = useSession();
@@ -50,7 +51,13 @@ const Header = () => {
         {/* Logo - Centered on mobile, left-aligned on desktop */}
         <div className="flex flex-1 justify-center md:justify-start">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold">BookClub</span>
+            <Image
+              src={"/favicon.png"}
+              alt="BookClub Logo"
+              width={32}
+              height={32}
+            />
+            <span className="text-xl font-bold">Clube do Livro</span>
           </Link>
         </div>
 
@@ -93,12 +100,9 @@ const Header = () => {
                     Meu Perfil
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/bookmarks">Salvos</Link>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/settings">Configurações</Link>
+                  <Link href={"/profile/edit"}>Editar Perfil</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
