@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -134,6 +135,7 @@ export default function EditProfile({ user }: EditFormProps) {
       }
 
       toast.success("Usuário atualizado com sucesso!");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || "Erro ao editar perfil.");
       console.error(error);
