@@ -8,9 +8,9 @@ import { CommentForm } from "@/components/posts/CommentForm";
 import { CommentItem } from "@/components/posts/CommentItem";
 
 interface PostPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function PostPage({ params }: PostPageProps) {
@@ -20,8 +20,10 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound();
   }
 
+  const { id } = await params;
+
   const post = await prisma.post.findUnique({
-    where: { id: (await params).id },
+    where: { id },
     include: {
       author: true,
       comments: {
