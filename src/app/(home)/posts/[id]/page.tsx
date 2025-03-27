@@ -19,10 +19,9 @@ export default async function PostPage({ params }: PostPageProps) {
   if (!session?.user) {
     notFound();
   }
-  console.log(params);
-  const id = (await params).id;
+
   const post = await prisma.post.findUnique({
-    where: { id },
+    where: { id: params.id },
     include: {
       author: true,
       comments: {
