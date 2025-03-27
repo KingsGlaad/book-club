@@ -21,7 +21,7 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const post = await prisma.post.findUnique({
-    where: { id: params.id },
+    where: { id: (await params).id },
     include: {
       author: true,
       comments: {
