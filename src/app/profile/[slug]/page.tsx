@@ -6,9 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { ProfilePage } from "./components/ProfilePage";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function Page({ params }: PageProps) {
