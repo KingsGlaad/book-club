@@ -1,9 +1,12 @@
 import PostsComponent from "./components/Posts";
 import AddPostButton from "./components/AddPostButton"; // Botão separado
 import { db } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
   try {
+    const session = await getServerSession(authOptions);
     // Buscar posts do banco de dados
     const allPosts = await db.post.findMany({
       orderBy: { createdAt: "desc" },
@@ -26,7 +29,6 @@ export default async function Home() {
         comments: true, // Incluindo comentários
       },
     });
-    console.log(allPosts);
     // Processar os posts para incluir as propriedades necessárias
     const processedPosts = allPosts.map((post) => ({
       ...post,
@@ -41,7 +43,7 @@ export default async function Home() {
         <h1 className="text-2xl font-bold mb-4">Últimos Posts</h1>
         {/* @ts-expect-error Server Component */}
         <PostsComponent posts={processedPosts} />
-        <AddPostButton />
+        {session && <AddPostButton />}
       </div>
     );
   } catch (error) {

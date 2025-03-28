@@ -25,11 +25,11 @@ export async function GET(request: Request) {
         author: { select: { name: true, image: true, slug: true } },
         _count: { select: { likes: true, comments: true } },
         likes: userId ? { where: { userId } } : undefined, // Verifica se o usuário deu like no post
-        bookmarks: userId ? { where: { userId } } : undefined, // Verifica se o usuário salvou o post
+        Bookmark: userId ? { where: { userId } } : undefined, // Verifica se o usuário salvou o post
         comments: {
           orderBy: { createdAt: "desc" },
           include: {
-            author: { select: { name: true, image: true } }, // Inclui os autores dos comentários
+            user: { select: { name: true, image: true } }, // Inclui os autores dos comentários
             _count: { select: { likes: true } }, // Conta os likes dos comentários
             likes: userId ? { where: { userId } } : undefined, // Verifica se o usuário deu like no comentário
           },
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     const updatedPosts = posts.slice(0, limit).map((post) => {
       const hasLiked = post.likes?.length > 0; // Verifica se o array de likes existe e tem elementos
       //const hasLikedComment = post.comments.likes?.length > 0; // Verifica se o array de likes dos comentários existe e tem elementos
-      const hasBookMarked = post.bookmarks?.length > 0; // Verifica se o array de mark existe e tem elementos
+      const hasBookMarked = post.Bookmark?.length > 0; // Verifica se o array de mark existe e tem elementos
       return {
         ...post,
         hasLiked, // Define "hasLiked" com base na existência de likes

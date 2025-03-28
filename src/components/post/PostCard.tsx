@@ -1,91 +1,170 @@
+"use client";
+
 import { forwardRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Heart, Bookmark, MessageCircle } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Post } from "@/hooks/usePosts";
-import { cn } from "@/lib/utils";
+import { PostHeader } from "@/components/posts/PostHeader";
+import { PostActions } from "@/components/posts/PostActions";
+import { CommentList } from "@/components/posts/CommentList";
 
 interface PostCardProps {
   post: Post;
-  onLike: (postId: string) => void;
-  onBookmark: (postId: string) => void;
-  onComment: (postId: string, content: string) => void;
+  onLike: (postId: string) => Promise<void>;
+  onBookmark: (postId: string) => Promise<void>;
+  onComment: (postId: string, content: string) => Promise<void>;
+  onCommentLike: (commentId: string) => Promise<void>;
+  onCommentDelete: (commentId: string) => Promise<void>;
+  onCommentEdit: (commentId: string, content: string) => Promise<void>;
   newComment: string;
   onCommentChange: (value: string) => void;
+  sessionUserId: string;
+  userRole?: "ADMIN" | "MODERATOR" | "USER";
 }
 
 const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
   (
-    { post, onLike, onBookmark, onComment, newComment, onCommentChange },
+    {
+      post,
+      onLike,
+      onBookmark,
+      onComment,
+      onCommentLike,
+      onCommentDelete,
+      onCommentEdit,
+      newComment,
+      onCommentChange,
+      sessionUserId,
+      userRole = "USER",
+    },
     ref
   ) => {
+    const [isExpanded, setIsExpanded] = useState(false);
     const [showComments, setShowComments] = useState(false);
 
-    console.log("Like", post.comments);
+    // Função para truncar HTML mantendo as tags
+    const truncateHTML = (html: string, maxLength: number) => {
+      const div = document.createElement("div");
+      div.innerHTML = html;
+
+      let textContent = "";
+      let truncated = "";
+      let isTruncated = false;
+
+      // Função recursiva para processar os nós
+      function processNode(node: Node) {
+        if (textContent.length >= maxLength) return;
+
+        if (node.nodeType === Node.TEXT_NODE) {
+          const remainingLength = maxLength - textContent.length;
+          const text = node.textContent || "";
+
+          if (textContent.length + text.length > maxLength) {
+            const truncatedText = text.slice(0, remainingLength) + "...";
+            textContent += truncatedText;
+            truncated += truncatedText;
+            isTruncated = true;
+          } else {
+            textContent += text;
+            truncated += text;
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as Element;
+          truncated += `<${element.tagName.toLowerCase()}`;
+
+          // Adiciona os atributos
+          Array.from(element.attributes).forEach((attr) => {
+            truncated += ` ${attr.name}="${attr.value}"`;
+          });
+
+          truncated += ">";
+
+          // Processa os filhos
+          Array.from(node.childNodes).forEach((child) => {
+            processNode(child);
+          });
+
+          truncated += `</${element.tagName.toLowerCase()}>`;
+        }
+      }
+
+      Array.from(div.childNodes).forEach((node) => {
+        processNode(node);
+      });
+
+      return {
+        truncatedHTML: truncated,
+        isTruncated,
+      };
+    };
+
+    const { truncatedHTML, isTruncated } = truncateHTML(post.content, 250);
 
     return (
       <div
         ref={ref}
-        className="rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-800 mx-auto mb-6 max-w-xl w-full"
+        className="rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-zinc-800 mx-auto mb-6 max-w-xl w-full"
       >
         {/* Post header */}
-        <div className="p-4 flex items-center space-x-3">
-          <Link href={`/profile/${post.author.slug}`}>
-            <Avatar>
-              <AvatarImage
-                src={post.author.image || ""}
-                alt={post.author.name || ""}
-              />
-              <AvatarFallback>
-                {post.author.name?.charAt(0).toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-          <div className="flex-1 min-w-0">
-            <Link
-              href={`/profile/${post.author.slug}`}
-              className="hover:underline"
-            >
-              <p className="font-medium text-gray-900 dark:text-white truncate">
-                {post.author.name}
-              </p>
-            </Link>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {formatDistanceToNow(new Date(post.createdAt), {
-                locale: ptBR,
-                addSuffix: true,
-              })}
-            </p>
-          </div>
-        </div>
+        <PostHeader author={post.author} createdAt={post.createdAt} />
 
         {/* Post content */}
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-4">
           <Link href={`/posts/${post.id}`}>
-            <h2 className="text-xl font-semibold mb-2 hover:text-gray-600 dark:hover:text-gray-400">
+            <h2 className="text-xl font-semibold mb-4 hover:text-gray-600 dark:hover:text-gray-400">
               {post.title}
             </h2>
           </Link>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            {post.content}
-          </p>
 
           {/* Post image */}
           {post.imageUrl && (
-            <div className="mb-4">
+            <div className="mb-6">
               <Image
                 src={post.imageUrl}
                 alt={post.title}
-                width={500} // Reduzido para um tamanho fixo
-                height={300} // Ajuste proporcional
-                className="w-full h-auto rounded-md"
+                width={500}
+                height={300}
+                className="w-full h-auto rounded-lg object-cover max-h-[300px]"
               />
             </div>
+          )}
+
+          <div
+            className="prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none dark:prose-invert mb-4
+              prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-white
+              prose-p:text-gray-700 dark:prose-p:text-gray-300
+              prose-strong:text-gray-900 dark:prose-strong:text-white
+              prose-em:text-gray-700 dark:prose-em:text-gray-300
+              prose-blockquote:border-l-4 prose-blockquote:border-gray-300 dark:prose-blockquote:border-gray-600
+              prose-blockquote:pl-4 prose-blockquote:my-4 prose-blockquote:italic prose-blockquote:bg-gray-50 dark:prose-blockquote:bg-gray-800/50
+              prose-blockquote:py-2 prose-blockquote:rounded-r
+              prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2
+              prose-ol:list-decimal prose-ol:pl-6 prose-ol:space-y-2
+              prose-li:my-2
+              prose-a:text-blue-500 prose-a:no-underline hover:prose-a:underline
+              dark:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300
+              prose-quoteless:text-gray-700 dark:prose-quoteless:text-gray-300
+              [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+            dangerouslySetInnerHTML={{
+              __html: isExpanded ? post.content : truncatedHTML,
+            }}
+          />
+          {isTruncated && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 mt-2"
+            >
+              {isExpanded ? (
+                <>
+                  Mostrar menos <ChevronUp className="h-4 w-4 ml-1" />
+                </>
+              ) : (
+                <>
+                  Ler mais <ChevronDown className="h-4 w-4 ml-1" />
+                </>
+              )}
+            </button>
           )}
 
           {/* Tags */}
@@ -104,129 +183,31 @@ const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
           )}
         </div>
 
-        {/* Post stats */}
-        <div className="px-4 py-2 flex items-center justify-between text-gray-500 dark:text-gray-400 text-sm border-t border-gray-100 dark:border-gray-800">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => onLike(post.id)}
-              className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-300"
-            >
-              <Heart
-                size={18}
-                className={cn(
-                  "transition-colors",
-                  post.hasLiked ? "fill-red-500 text-red-500" : ""
-                )}
-              />
-              <span>{Number(post.likes) || 0}</span>
-            </button>
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-300"
-            >
-              <MessageCircle size={18} />
-              <span>{post.comments?.length || 0}</span>
-            </button>
-          </div>
-          <button
-            onClick={() => onBookmark(post.id)}
-            className="hover:text-gray-700 dark:hover:text-gray-300"
-          >
-            <Bookmark
-              size={18}
-              className={cn(
-                "transition-colors",
-                post.hasBookMarked ? "fill-yellow-500 text-yellow-500" : ""
-              )}
-            />
-          </button>
-        </div>
+        {/* Post actions */}
+        <PostActions
+          likes={post.likes}
+          commentsCount={post.comments?.length || 0}
+          hasLiked={post.hasLiked}
+          hasBookMarked={post.hasBookMarked}
+          onToggleComments={() => setShowComments(!showComments)}
+          onLike={() => onLike(post.id)}
+          onBookmark={() => onBookmark(post.id)}
+        />
 
         {/* Comments section */}
         {showComments && (
-          <div className="px-4 pt-2 pb-4 border-t border-gray-100 dark:border-gray-800">
-            {/* Comment form */}
-            <div className="mb-4 flex items-start space-x-2">
-              <Avatar className="w-8 h-8">
-                <AvatarImage
-                  src={post.author.image || ""}
-                  alt={post.author.name || ""}
-                />
-                <AvatarFallback>
-                  {post.author.name?.charAt(0).toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <Textarea
-                  placeholder="Escreva um comentário..."
-                  value={newComment}
-                  onChange={(e) => onCommentChange(e.target.value)}
-                  className="resize-none mb-2"
-                  rows={2}
-                />
-                <Button
-                  size="sm"
-                  onClick={() => onComment(post.id, newComment)}
-                  disabled={!newComment.trim()}
-                >
-                  Comentar
-                </Button>
-              </div>
-            </div>
-
-            {/* Comments list */}
-            <div className="space-y-4">
-              {post.comments && post.comments.length > 0 ? (
-                post.comments.map((comment) => (
-                  <div key={comment.id} className="flex items-start space-x-2">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage
-                        src={comment.author.image || ""}
-                        alt={comment.author.name || ""}
-                      />
-                      <AvatarFallback>
-                        {comment.author.name?.charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <Link
-                          href={`/profile/${comment.author.slug}`}
-                          className="font-medium text-gray-900 dark:text-white hover:underline"
-                        >
-                          {comment.author.name}
-                        </Link>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatDistanceToNow(new Date(comment.createdAt), {
-                            locale: ptBR,
-                            addSuffix: true,
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between space-x-2 ">
-                        <p className="text-gray-700 dark:text-gray-300">
-                          {comment.content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-2">
-                  Sem comentários ainda
-                </p>
-              )}
-
-              {post.comments && post.comments.length < post.commentsCount && (
-                <Link
-                  href={`/posts/${post.id}`}
-                  className="block text-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Ver todos os {post.commentsCount} comentários
-                </Link>
-              )}
-            </div>
-          </div>
+          <CommentList
+            comments={post.comments}
+            newComment={newComment}
+            onCommentChange={onCommentChange}
+            onComment={onComment}
+            onCommentLike={onCommentLike}
+            onCommentDelete={onCommentDelete}
+            onCommentEdit={onCommentEdit}
+            postId={post.id}
+            sessionUserId={sessionUserId}
+            userRole={userRole}
+          />
         )}
       </div>
     );

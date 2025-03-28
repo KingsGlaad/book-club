@@ -26,8 +26,8 @@ export async function POST(
 
   try {
     const comment = await db.comment.create({
-      data: { content, authorId: userId, postId },
-      include: { author: true },
+      data: { content, userId: userId, postId },
+      include: { user: true },
     });
 
     return NextResponse.json(comment, { status: 201 });
@@ -47,9 +47,7 @@ export async function GET(
     const comments = await db.comment.findMany({
       where: { postId },
       include: {
-        author: {
-          select: { id: true, name: true, image: true }, // Pegando apenas os dados necessários
-        },
+        user: true,
       },
       orderBy: { createdAt: "desc" },
     });

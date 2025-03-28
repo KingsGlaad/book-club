@@ -1,4 +1,5 @@
 "use client";
+
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Heart, MoreVertical, Pencil, Trash2 } from "lucide-react";
@@ -11,140 +12,281 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useState } from "react";
-import { Session } from "next-auth";
+import { likeComment, deleteComment, editComment } from "@/app/actions/comment";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Comment {
   id: string;
   content: string;
-  createdAt: string;
+  createdAt: Date;
   likesCount: number;
   hasLiked: boolean;
   author: {
     id: string;
-    name: string;
+    name: string | null;
     image: string | null;
     slug: string;
-    role: string;
   };
 }
 
 interface CommentItemProps {
   comment: Comment;
-  session: Session | null;
-  onCommentLike: (commentId: string) => Promise<void>;
-  onCommentDelete: (commentId: string) => Promise<void>;
-  onCommentEdit: (commentId: string, content: string) => Promise<void>;
+  sessionUserId: string;
+  userRole?: "ADMIN" | "MODERATOR" | "USER";
 }
 
 export function CommentItem({
   comment,
-  session,
-  onCommentLike,
-  onCommentDelete,
-  onCommentEdit,
+  sessionUserId,
+  userRole = "USER",
 }: CommentItemProps) {
-  const [editedContent, setEditedContent] = useState(comment.content);
   const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(comment.content);
+  const [isLiking, setIsLiking] = useState(false);
+  const [currentLikesCount, setCurrentLikesCount] = useState(
+    comment.likesCount
+  );
+  const [hasLiked, setHasLiked] = useState(comment.hasLiked);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const router = useRouter();
 
-  const handleEdit = () => {
-    setIsEditing(true);
+  const handleLike = async () => {
+    if (isLiking) return;
+    setIsLiking(true);
+
+    // Atualização otimista
+    setHasLiked(!hasLiked);
+    setCurrentLikesCount((prev) => (hasLiked ? prev - 1 : prev + 1));
+
+    try {
+      await likeComment(comment.id, sessionUserId);
+      toast.success(hasLiked ? "Comentário descurtido" : "Comentário curtido");
+    } catch (error) {
+      // Reverter em caso de erro
+      setHasLiked(!hasLiked);
+      setCurrentLikesCount((prev) => (hasLiked ? prev + 1 : prev - 1));
+      console.error("Erro ao curtir comentário:", error);
+      toast.error("Erro ao curtir o comentário");
+    } finally {
+      setIsLiking(false);
+    }
   };
 
-  const handleSave = async () => {
-    await onCommentEdit(comment.id, editedContent);
-    setIsEditing(false);
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      toast.loading("Excluindo comentário...");
+      await deleteComment(comment.id);
+      setShowDeleteDialog(false);
+      toast.dismiss();
+
+      // Mensagem personalizada baseada no papel do usuário
+      const actionDescription =
+        sessionUserId === comment.author.id
+          ? "Seu comentário foi removido permanentemente."
+          : "O comentário foi removido permanentemente.";
+
+      toast.success("Comentário excluído com sucesso!", {
+        description: actionDescription,
+      });
+      router.refresh();
+    } catch (error) {
+      console.error("Erro ao excluir comentário:", error);
+      toast.dismiss();
+      toast.error("Erro ao excluir o comentário", {
+        description: "Tente novamente mais tarde.",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
-  const handleCancel = () => {
-    setEditedContent(comment.content);
-    setIsEditing(false);
+  const handleEdit = async () => {
+    if (!editedContent.trim()) {
+      toast.error("O comentário não pode estar vazio");
+      return;
+    }
+
+    try {
+      await editComment(comment.id, editedContent);
+      setIsEditing(false);
+
+      // Mensagem personalizada baseada no papel do usuário
+      const actionDescription =
+        sessionUserId === comment.author.id
+          ? "Seu comentário foi atualizado."
+          : "O comentário foi atualizado.";
+
+      toast.success("Comentário editado com sucesso", {
+        description: actionDescription,
+      });
+      router.refresh();
+    } catch (error) {
+      console.error("Erro ao editar comentário:", error);
+      toast.error("Erro ao editar o comentário", {
+        description: "Tente novamente mais tarde.",
+      });
+    }
   };
 
   const canModerate =
-    session?.user?.id === comment.author.id ||
-    session?.user?.role === "MODERATOR" ||
-    session?.user?.role === "ADMIN";
+    sessionUserId === comment.author.id || // Autor do comentário
+    userRole === "ADMIN" || // Admin
+    userRole === "MODERATOR"; // Moderador
 
   return (
-    <div className="flex gap-4 p-4 border-b">
-      <Avatar>
-        <AvatarImage src={comment.author.image || undefined} />
-        <AvatarFallback>
-          {comment.author.name.charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
+    <>
+      <div className="flex items-start space-x-2 group">
+        <Link href={`/profile/${comment.author.slug}`}>
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={comment.author.image || undefined} />
+            <AvatarFallback>{comment.author.name?.[0] || "U"}</AvatarFallback>
+          </Avatar>
+        </Link>
+        <div className="flex-1">
+          <div className="bg-gray-100 dark:bg-zinc-800/60 rounded-2xl px-4 py-2">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/profile/${comment.author.slug}`}
+                className="font-semibold text-sm text-gray-900 dark:text-white hover:underline"
+              >
+                {comment.author.name}
+              </Link>
+            </div>
 
-      <div className="flex-1">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="font-semibold">{comment.author.name}</span>
-            <span className="text-sm text-muted-foreground ml-2">
+            {isEditing ? (
+              <div className="mt-2">
+                <Textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="resize-none mb-2 bg-white dark:bg-gray-800 text-sm"
+                  rows={2}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleEdit}>
+                    Salvar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedContent(comment.content);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">
+                {comment.content}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 mt-1 px-4">
+            <button
+              onClick={handleLike}
+              disabled={isLiking}
+              className={cn(
+                "text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300",
+                isLiking && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {hasLiked ? "Descurtir" : "Curtir"}
+            </button>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {formatDistanceToNow(new Date(comment.createdAt), {
                 addSuffix: true,
                 locale: ptBR,
               })}
             </span>
-          </div>
-
-          {canModerate && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleEdit}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onCommentDelete(comment.id)}
-                  className="text-red-600"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-
-        {isEditing ? (
-          <div className="mt-2 space-y-2">
-            <Textarea
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="min-h-[100px]"
-            />
-            <div className="flex gap-2">
-              <Button onClick={handleSave}>Salvar</Button>
-              <Button variant="outline" onClick={handleCancel}>
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <p className="mt-2 text-sm">{comment.content}</p>
-        )}
-
-        <div className="flex items-center gap-4 mt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "flex items-center gap-1 text-muted-foreground hover:text-red-500",
-              comment.hasLiked && "text-red-500"
+            {currentLikesCount > 0 && (
+              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <Heart size={12} className={cn("fill-red-500 text-red-500")} />
+                <span>{currentLikesCount}</span>
+              </div>
             )}
-            onClick={() => onCommentLike(comment.id)}
-          >
-            <Heart className="h-4 w-4" />
-            <span>{comment.likesCount}</span>
-          </Button>
+            {canModerate && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-32">
+                  <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                    {userRole !== "USER" &&
+                      sessionUserId !== comment.author.id && (
+                        <span className="ml-1 text-xs opacity-75">
+                          ({userRole === "ADMIN" ? "Admin" : "Mod"})
+                        </span>
+                      )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir comentário</DialogTitle>
+            <DialogDescription>
+              {sessionUserId === comment.author.id
+                ? "Tem certeza que deseja excluir seu comentário? Esta ação não pode ser desfeita."
+                : `Tem certeza que deseja excluir este comentário como ${
+                    userRole === "ADMIN" ? "administrador" : "moderador"
+                  }? Esta ação não pode ser desfeita.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-900 dark:hover:bg-red-800"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

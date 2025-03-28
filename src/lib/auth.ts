@@ -16,8 +16,6 @@ export const authOptions: AuthOptions = {
       }
 
       const slug = await generateUniqueSlug(db, data.name);
-      console.log("Slug gerado:", slug);
-      console.log("Tentando criar usuário:", JSON.stringify(data, null, 2));
 
       return db.user.create({
         data: {
@@ -26,6 +24,12 @@ export const authOptions: AuthOptions = {
         },
       });
     },
+  },
+  pages: {
+    signIn: "/signin",
+    error: "/signin",
+    verifyRequest: "/verify-request",
+    newUser: "/new-user",
   },
   providers: [
     GoogleProvider({

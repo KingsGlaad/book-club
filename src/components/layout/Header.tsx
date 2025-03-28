@@ -100,6 +100,9 @@ const Header = () => {
                     Meu Perfil
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/posts/saved">Posts Salvos</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href={"/profile/edit"}>Editar Perfil</Link>

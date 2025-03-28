@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
 }
 
 enum Role {
@@ -43,12 +44,14 @@ model Session {
 
 model User {
   id            String    @id @default(cuid())
-  name          String?
+  name          String
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  slug          String    @unique
+  coverImage    String?
+  birthDate     DateTime?
   bio           String?   @db.Text
+  slug          String    @unique
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -60,9 +63,10 @@ model User {
   discussions Discussion[]
   messages    Message[]
   likes       Like[]
-  bookmarks   Bookmark[]
+  bookmarks   Post[]       @relation("bookmarks")
   followers   Follow[]     @relation("following")
   following   Follow[]     @relation("follower")
+  Bookmark    Bookmark[]
 }
 
 model Post {
@@ -75,12 +79,14 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author    User          @relation(fields: [authorId], references: [id])
-  authorId  String
-  comments  Comment[]
-  likes     Like[]
-  bookmarks Bookmark[]
-  tags      TagsOnPosts[]
+  author       User          @relation(fields: [authorId], references: [id])
+  authorId     String
+  comments     Comment[]
+  likes        Like[]
+  bookmarkedBy User[]        @relation("bookmarks")
+  tags         Tag[]
+  TagsOnPosts  TagsOnPosts[]
+  Bookmark     Bookmark[]
 }
 
 model Discussion {
@@ -100,18 +106,18 @@ model Discussion {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  author       User        @relation(fields: [authorId], references: [id])
-  authorId     String
-  post         Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId       String?
-  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  content      String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String
+  postId       String
   discussionId String?
-  likes        Like[]
+
+  user       User        @relation(fields: [userId], references: [id])
+  post       Post        @relation(fields: [postId], references: [id])
+  likes      Like[]
+  Discussion Discussion? @relation(fields: [discussionId], references: [id])
 }
 
 model Message {
@@ -125,46 +131,47 @@ model Message {
 }
 
 model Tag {
-  id          String              @id @default(cuid())
-  name        String              @unique
-  description String?
-  posts       TagsOnPosts[]
-  discussions TagsOnDiscussions[]
+  id                String              @id @default(cuid())
+  name              String              @unique
+  posts             Post[]
+  TagsOnPosts       TagsOnPosts[]
+  TagsOnDiscussions TagsOnDiscussions[]
 }
 
 model TagsOnPosts {
-  post   Post   @relation(fields: [postId], references: [id])
   postId String
-  tag    Tag    @relation(fields: [tagId], references: [id])
   tagId  String
+
+  post Post @relation(fields: [postId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
 
   @@id([postId, tagId])
 }
 
 model TagsOnDiscussions {
-  discussion   Discussion @relation(fields: [discussionId], references: [id])
   discussionId String
-  tag          Tag        @relation(fields: [tagId], references: [id])
   tagId        String
+
+  discussion Discussion @relation(fields: [discussionId], references: [id])
+  tag        Tag        @relation(fields: [tagId], references: [id])
 
   @@id([discussionId, tagId])
 }
 
 model Like {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
-  user         User        @relation(fields: [userId], references: [id])
-  userId       String
-  post         Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId       String?
-  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
   discussionId String?
-  comment      Comment?    @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId       String
+  postId       String?
   commentId    String?
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id])
+  post       Post?       @relation(fields: [postId], references: [id])
+  comment    Comment?    @relation(fields: [commentId], references: [id])
+  Discussion Discussion? @relation(fields: [discussionId], references: [id])
 
   @@unique([userId, postId])
-  @@unique([userId, discussionId])
   @@unique([userId, commentId])
 }
 
@@ -172,23 +179,26 @@ model Bookmark {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  user         User        @relation(fields: [userId], references: [id])
   userId       String
-  post         Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId       String?
-  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
   discussionId String?
+
+  user       User        @relation(fields: [userId], references: [id])
+  post       Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  discussion Discussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@unique([userId, discussionId])
 }
 
 model Follow {
-  follower    User     @relation("follower", fields: [followerId], references: [id])
+  id          String   @id @default(cuid())
   followerId  String
-  following   User     @relation("following", fields: [followingId], references: [id])
-  followingId String
   createdAt   DateTime @default(now())
+  followingId String
 
-  @@id([followerId, followingId])
+  follower  User @relation("follower", fields: [followerId], references: [id])
+  following User @relation("following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
 }

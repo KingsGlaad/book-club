@@ -16,6 +16,9 @@ export default function PostsComponent({ id }: { id: string }) {
     handleLike,
     handleBookmark,
     handleComment,
+    handleCommentLike,
+    handleCommentDelete,
+    handleCommentEdit,
     setNewComments,
     loadMorePosts,
   } = usePosts(id);
@@ -43,9 +46,12 @@ export default function PostsComponent({ id }: { id: string }) {
               key={post.id}
               post={post}
               ref={index === posts.length - 1 ? lastPostRef : null}
+              onComment={handleComment}
               onLike={handleLike}
               onBookmark={handleBookmark}
-              onComment={handleComment}
+              onCommentLike={handleCommentLike}
+              onCommentDelete={handleCommentDelete}
+              onCommentEdit={handleCommentEdit}
               newComment={newComments[post.id] || ""}
               onCommentChange={(value) =>
                 setNewComments({
@@ -53,6 +59,8 @@ export default function PostsComponent({ id }: { id: string }) {
                   [post.id]: value,
                 })
               }
+              sessionUserId={id}
+              userRole="USER"
             />
           ))
         ) : (

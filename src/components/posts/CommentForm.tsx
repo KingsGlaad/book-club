@@ -1,66 +1,64 @@
 "use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { createComment } from "@/app/actions/comment";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface CommentFormProps {
   author: {
-    id: string;
-    name: string | null;
+    name: string;
     image: string | null;
   };
-  newComment: string;
-  setNewComment: (value: string) => void;
-  onSubmit: (content: string) => Promise<void>;
+  postId: string;
+  authorId: string;
 }
 
-export function CommentForm({
-  author,
-  newComment,
-  setNewComment,
-  onSubmit,
-}: CommentFormProps) {
+export function CommentForm({ author, postId, authorId }: CommentFormProps) {
+  const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!newComment.trim()) return;
+
     setIsSubmitting(true);
     try {
-      await onSubmit(newComment);
+      await createComment(newComment, authorId, postId);
       setNewComment("");
+      router.refresh();
     } catch (error) {
-      console.error("Erro ao enviar comentário:", error);
+      console.error("Erro ao criar comentário:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex gap-4">
-      <Avatar>
+    <form onSubmit={handleSubmit} className="flex items-start space-x-2">
+      <Avatar className="w-8 h-8">
         <AvatarImage src={author.image || undefined} />
-        <AvatarFallback>
-          {author.name?.charAt(0).toUpperCase() || "U"}
-        </AvatarFallback>
+        <AvatarFallback>{author.name[0]}</AvatarFallback>
       </Avatar>
-
       <div className="flex-1">
         <Textarea
-          placeholder="Adicione um comentário..."
+          placeholder="Escreva um comentário..."
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          className="min-h-[100px]"
+          className="resize-none mb-2"
+          rows={2}
         />
-        <div className="flex justify-end mt-2">
-          <Button
-            onClick={handleSubmit}
-            disabled={!newComment.trim() || isSubmitting}
-          >
-            {isSubmitting ? "Enviando..." : "Comentar"}
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          type="submit"
+          disabled={!newComment.trim() || isSubmitting}
+        >
+          {isSubmitting ? "Enviando..." : "Comentar"}
+        </Button>
       </div>
-    </div>
+    </form>
   );
 }

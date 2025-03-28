@@ -142,8 +142,6 @@ export default function EditProfile({ user }: EditFormProps) {
     }
   };
 
-  console.log(user.role);
-
   // Função para obter a label formatada
   const getRoleLabel = (role: string): string => {
     const foundRole = ROLE_TYPE_OPTIONS.find((option) => option.value === role);

@@ -1,41 +1,43 @@
+"use client";
+
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Link from "next/link";
 
 interface PostHeaderProps {
   author: {
     id: string;
-    name: string;
+    name: string | null;
     image: string | null;
     slug: string;
   };
-  createdAt: string;
+  createdAt: Date;
 }
 
 export function PostHeader({ author, createdAt }: PostHeaderProps) {
   return (
-    <div className="flex items-center gap-4">
+    <div className="p-4 flex items-center space-x-3">
       <Link href={`/profile/${author.slug}`}>
         <Avatar>
-          <AvatarImage src={author.image || undefined} />
-          <AvatarFallback>{author.name.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={author.image || ""} alt={author.name || ""} />
+          <AvatarFallback>
+            {author.name?.charAt(0).toUpperCase() || "U"}
+          </AvatarFallback>
         </Avatar>
       </Link>
-
-      <div>
-        <Link
-          href={`/profile/${author.slug}`}
-          className="font-semibold hover:underline"
-        >
-          {author.name}
+      <div className="flex-1 min-w-0">
+        <Link href={`/profile/${author.slug}`} className="hover:underline">
+          <p className="font-medium text-gray-900 dark:text-white truncate">
+            {author.name}
+          </p>
         </Link>
-        <span className="text-sm text-muted-foreground ml-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {formatDistanceToNow(new Date(createdAt), {
-            addSuffix: true,
             locale: ptBR,
+            addSuffix: true,
           })}
-        </span>
+        </p>
       </div>
     </div>
   );

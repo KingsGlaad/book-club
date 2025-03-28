@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { hostname: "collegeinfogeek.com" },
       { hostname: "rnhfycqwsajfjhvibiuv.supabase.co" },
+      { hostname: "muzbrplbdvihcqgshfdc.supabase.co" },
     ],
   },
 };
