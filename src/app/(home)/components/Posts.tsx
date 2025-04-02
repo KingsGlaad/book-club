@@ -1,12 +1,18 @@
 "use client";
 
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import { usePosts } from "@/hooks/usePosts";
+import { usePosts, Post } from "@/hooks/usePosts";
 import PostCard from "@/components/post/PostCard";
 import PostSkeleton from "@/components/post/PostSkeleton";
 import ErrorMessage from "@/components/ui/ErrorMessage";
 
-export default function PostsComponent({ id }: { id: string }) {
+export default function PostsComponent({
+  id,
+  initialPosts,
+}: {
+  id: string;
+  initialPosts?: Post[];
+}) {
   const {
     posts,
     loading,
@@ -16,12 +22,9 @@ export default function PostsComponent({ id }: { id: string }) {
     handleLike,
     handleBookmark,
     handleComment,
-    handleCommentLike,
-    handleCommentDelete,
-    handleCommentEdit,
     setNewComments,
     loadMorePosts,
-  } = usePosts(id);
+  } = usePosts(id, initialPosts);
 
   const lastPostRef = useInfiniteScroll(
     loading,
@@ -49,9 +52,6 @@ export default function PostsComponent({ id }: { id: string }) {
               onComment={handleComment}
               onLike={handleLike}
               onBookmark={handleBookmark}
-              onCommentLike={handleCommentLike}
-              onCommentDelete={handleCommentDelete}
-              onCommentEdit={handleCommentEdit}
               newComment={newComments[post.id] || ""}
               onCommentChange={(value) =>
                 setNewComments({

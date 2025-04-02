@@ -14,9 +14,6 @@ interface PostCardProps {
   onLike: (postId: string) => Promise<void>;
   onBookmark: (postId: string) => Promise<void>;
   onComment: (postId: string, content: string) => Promise<void>;
-  onCommentLike: (commentId: string) => Promise<void>;
-  onCommentDelete: (commentId: string) => Promise<void>;
-  onCommentEdit: (commentId: string, content: string) => Promise<void>;
   newComment: string;
   onCommentChange: (value: string) => void;
   sessionUserId: string;
@@ -30,9 +27,6 @@ const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
       onLike,
       onBookmark,
       onComment,
-      onCommentLike,
-      onCommentDelete,
-      onCommentEdit,
       newComment,
       onCommentChange,
       sessionUserId,
@@ -201,9 +195,6 @@ const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
             newComment={newComment}
             onCommentChange={onCommentChange}
             onComment={onComment}
-            onCommentLike={onCommentLike}
-            onCommentDelete={onCommentDelete}
-            onCommentEdit={onCommentEdit}
             postId={post.id}
             sessionUserId={sessionUserId}
             userRole={userRole}

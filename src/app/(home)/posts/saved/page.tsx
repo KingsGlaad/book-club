@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { SavedPostsClient } from "@/components/saved-posts/SavedPostsClient";
 import { Post } from "@/hooks/usePosts";
+import PostsComponent from "../../components/Posts";
 
 // Componente do servidor que busca os dados
 export default async function SavedPosts() {
@@ -93,5 +93,12 @@ export default async function SavedPosts() {
     tags: [],
   })) as unknown as Post[];
 
-  return <SavedPostsClient initialPosts={postsWithLikeAndBookmarkStatus} />;
+  console.log(postsWithLikeAndBookmarkStatus);
+
+  return (
+    <PostsComponent
+      id="saved-posts"
+      initialPosts={postsWithLikeAndBookmarkStatus}
+    />
+  );
 }
